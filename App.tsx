@@ -5,7 +5,7 @@ import { ICONS, CATEGORIES } from './constants';
 import BudgetOverview from './components/BudgetOverview';
 import { getProjectInsights } from './services/geminiService';
 import { getProject, updateProject, addExpense, deleteExpense, addLog, addMessage, uploadDesignImage, deleteDesign, addMilestone, updateMilestone, deleteMilestone, uploadVoiceNote, subscribeToExpenses, subscribeToLogs, subscribeToMessages, subscribeToDesigns, subscribeToTimeline } from './services/supabaseService';
-import { verifyTeamPasskey } from './services/authService';
+import { verifyTeamPasskey, updateTeamPasskey } from './services/authService';
 import { addToQueue, processQueue } from './services/offlineQueue';
 import SyncIndicator from './components/SyncIndicator';
 import Toast from './components/Toast';
@@ -949,6 +949,89 @@ const App: React.FC = () => {
                             />
                           </div>
                        </div>
+                    </div>
+
+                    {/* Team Password Change */}
+                    <div className="p-8 bg-gray-50 rounded-[2rem] border border-gray-100 text-left">
+                       <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Team Security</h4>
+                       <form onSubmit={async (e) => {
+                         e.preventDefault();
+                         const fd = new FormData(e.currentTarget);
+                         const currentPassword = fd.get('currentPassword') as string;
+                         const newPassword = fd.get('newPassword') as string;
+                         const confirmPassword = fd.get('confirmPassword') as string;
+
+                         if (newPassword !== confirmPassword) {
+                           setToast({ message: 'New passwords do not match', type: 'error' });
+                           return;
+                         }
+
+                         if (newPassword.length < 3) {
+                           setToast({ message: 'New password must be at least 3 characters', type: 'error' });
+                           return;
+                         }
+
+                         setIsSyncing(true);
+                         try {
+                           const result = await updateTeamPasskey(currentPassword, newPassword);
+                           if (result.success) {
+                             setToast({ message: result.message, type: 'success' });
+                             e.currentTarget.reset();
+                           } else {
+                             setToast({ message: result.message, type: 'error' });
+                           }
+                         } catch (error) {
+                           console.error('Error changing password:', error);
+                           setToast({ message: 'Failed to change password. Please try again.', type: 'error' });
+                         } finally {
+                           setIsSyncing(false);
+                         }
+                       }} className="space-y-4">
+                          <div>
+                            <label className="text-[9px] font-black text-gray-400 uppercase ml-1">Current Team Password</label>
+                            <input 
+                              name="currentPassword"
+                              type="password"
+                              required
+                              placeholder="Enter current password"
+                              className="w-full px-5 py-3 mt-1 bg-white border border-gray-100 rounded-xl outline-none font-bold focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-black text-gray-400 uppercase ml-1">New Team Password</label>
+                            <input 
+                              name="newPassword"
+                              type="password"
+                              required
+                              minLength={3}
+                              placeholder="Enter new password (min 3 characters)"
+                              className="w-full px-5 py-3 mt-1 bg-white border border-gray-100 rounded-xl outline-none font-bold focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-black text-gray-400 uppercase ml-1">Confirm New Password</label>
+                            <input 
+                              name="confirmPassword"
+                              type="password"
+                              required
+                              minLength={3}
+                              placeholder="Confirm new password"
+                              className="w-full px-5 py-3 mt-1 bg-white border border-gray-100 rounded-xl outline-none font-bold focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+                          <button 
+                            type="submit"
+                            disabled={isSyncing}
+                            className="w-full py-4 rounded-xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isSyncing ? 'Updating Password...' : 'Change Team Password'}
+                          </button>
+                          {!isSupabaseConfigured() && (
+                            <p className="text-[9px] text-yellow-600 font-medium text-center">
+                              ⚠️ Password change requires Supabase configuration
+                            </p>
+                          )}
+                       </form>
                     </div>
                     
                     <button 
