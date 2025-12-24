@@ -1,0 +1,9 @@
+
+{
+  "name": "DesignBudget Hub",
+  "description": "A comprehensive interior design project management tool for tracking budgets, logging expenses, and managing team progress logs with AI-powered insights.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
